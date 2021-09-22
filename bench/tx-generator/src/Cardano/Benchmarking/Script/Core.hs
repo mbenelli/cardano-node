@@ -316,7 +316,7 @@ runBenchmark :: SubmitMode -> SpendMode -> ThreadName -> NumberOfTxs -> TPSRate 
 runBenchmark submitMode spendMode threadName txCount tps
   = case spendMode of
       SpendOutput -> withEra $ runBenchmarkInEra submitMode threadName txCount tps
-      SpendScript scriptFile -> runPlutusBenchmark submitMode scriptFile threadName txCount tps
+      SpendScript scriptFile units -> runPlutusBenchmark submitMode scriptFile executionUnits threadName txCount tps
 
 
 runBenchmarkInEra :: forall era. IsShelleyBasedEra era => SubmitMode -> ThreadName -> NumberOfTxs -> TPSRate -> AsType era -> ActionM ()
@@ -376,8 +376,8 @@ runBenchmarkInEra submitMode (ThreadName threadName) txCount tps era = do
         Right ctl -> setName (ThreadName threadName) ctl
     _otherwise -> runWalletScriptInMode submitMode $ walletScript $ FundSet.Target "alternate-submit-mode"
 
-runPlutusBenchmark :: SubmitMode -> FilePath -> ThreadName -> NumberOfTxs -> TPSRate -> ActionM ()
-runPlutusBenchmark submitMode scriptFile (ThreadName threadName) txCount tps = do
+runPlutusBenchmark :: SubmitMode -> FilePath -> ExecutionUnits -> ThreadName -> NumberOfTxs -> TPSRate -> ActionM ()
+runPlutusBenchmark submitMode scriptFile  executionUnits (ThreadName threadName) txCount tps = do
   tracers  <- get BenchTracers
   targets  <- getUser TTargets
   (NumberOfInputsPerTx   numInputs) <- getUser TNumberOfInputsPerTx
@@ -402,8 +402,6 @@ runPlutusBenchmark submitMode scriptFile (ThreadName threadName) txCount tps = d
   connectClient <- getConnectClient
 
   let
-    executionUnits = (ExecutionUnits 70000000 70000000)
-
     scriptFee = quantityToLovelace $ Quantity $ ceiling f
        where
          f :: Rational

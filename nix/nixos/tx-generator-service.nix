@@ -2,6 +2,10 @@ pkgs:
 let
   plutus = true;
   plutusScriptFile = "../../../bench/script/sum1ToN.plutus";
+  executionMemory = 70000000; # hardcoded in Haskell
+  executionSteps  = 70000000; # hardcoded in Haskell
+  scriptFees = executionMemory * 1 + executionSteps  * 1;
+  
   ## Standard, simplest possible value transaction workload.
   ##
   ## For definitions of the cfg attributes referred here,
@@ -34,9 +38,9 @@ let
         requiredMemory = 70000000; # hardcoded in Haskell
         requiredSteps  = 70000000; # hardcoded in Haskell
         totalFee = if plutus
-                   then tx_fee + (requiredMemory + requiredSteps) * inputs_per_tx
+                   then tx_fee + scriptFees * inputs_per_tx
                    else tx_fee;
-        safeCollateral = max ((requiredMemory + requiredSteps) * inputs_per_tx) min_utxo_value;
+        safeCollateral = max scriptFees  min_utxo_value;
         minTotalValue = min_utxo_value * outputs_per_tx + totalFee;
         minValuePerInput = minTotalValue / inputs_per_tx + 1;
       in
@@ -60,7 +64,10 @@ let
         tps = tps;
         submitMode.NodeToNode = [];
         spendMode = if plutus
-                    then { SpendScript = plutusScriptFile; }
+                    then { SpendScript = [
+                             "plutusScriptFile"
+                             {memory = executionMemory; steps = executionSteps; }
+                           ]; }
                     else { SpendOutput = []; };
       }
       { waitBenchmark = "tx-submit-benchmark"; }

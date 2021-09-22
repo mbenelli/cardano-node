@@ -15,7 +15,7 @@ import           Prelude
 import           GHC.Generics
 
 import           Cardano.Benchmarking.OuroborosImports (SigningKeyFile)
-import           Cardano.Api (AnyCardanoEra, Lovelace)
+import           Cardano.Api (AnyCardanoEra, ExecutionUnits, Lovelace)
 
 import           Cardano.Benchmarking.Script.Env
 import           Cardano.Benchmarking.Script.Store
@@ -59,6 +59,6 @@ deriving instance Generic PayMode
 
 data SpendMode where
   SpendOutput :: SpendMode
-  SpendScript :: !String -> SpendMode
+  SpendScript :: !String -> !ExecutionUnits -> SpendMode
   deriving (Show, Eq)
 deriving instance Generic SpendMode
