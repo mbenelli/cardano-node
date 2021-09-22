@@ -16,6 +16,7 @@ module Cardano.Benchmarking.Script.Core
 where
 
 import           Prelude
+import           Data.Ratio ((%))
 import           Control.Monad
 import           Control.Monad.Trans.Except
 import           Control.Monad.IO.Class
@@ -24,7 +25,7 @@ import           Control.Tracer (traceWith, nullTracer)
 
 import           Ouroboros.Network.Protocol.LocalTxSubmission.Type (SubmitResult (..))
 import           Cardano.Api
-import           Cardano.Api.Shelley ( ProtocolParameters)
+import           Cardano.Api.Shelley ( ProtocolParameters, protocolParamPrices)
 
 import qualified Cardano.Benchmarking.FundSet as FundSet
 import           Cardano.Benchmarking.FundSet (FundInEra(..), Validity(..), Variant(..), liftAnyEra )
@@ -384,6 +385,9 @@ runPlutusBenchmark submitMode scriptFile (ThreadName threadName) txCount tps = d
   networkId <- get NetworkId
   minValuePerUTxO <- getUser TMinValuePerUTxO
   protocolParameters <- queryProtocolParameters
+  executionUnitPrices <- case protocolParamPrices protocolParameters of
+    Just x -> return x
+    Nothing -> throwE $ WalletError "unexpected protocolParamPrices == Nothing in runPlutusBenchmark"
   walletRef <- get GlobalWallet
   fundKey <- getName $ KeyName "pass-partout"
   (PlutusScript PlutusScriptV1 script) <- liftIO $ PlutusExample.readScript scriptFile
@@ -398,9 +402,17 @@ runPlutusBenchmark submitMode scriptFile (ThreadName threadName) txCount tps = d
   connectClient <- getConnectClient
 
   let
-    requiredMemory = 70000000
-    requiredSteps  = 70000000
-    totalFee = baseFee + (fromIntegral requiredMemory + fromIntegral requiredSteps) * fromIntegral numInputs
+    executionUnits = (ExecutionUnits 70000000 70000000)
+
+    scriptFee = quantityToLovelace $ Quantity $ ceiling f
+       where
+         f :: Rational
+         f = (executionSteps e `times` priceExecutionSteps p) + (executionMemory e `times` priceExecutionMemory p)
+         e = executionUnits
+         p = executionUnitPrices
+         times w c = (fromIntegral w) % 1 * c
+
+    totalFee = baseFee +  fromIntegral numInputs * scriptFee
     (Quantity minValue) = lovelaceToQuantity $ fromIntegral numOutputs * minValuePerUTxO + totalFee
   -- this is not totally correct:
   -- beware of rounding errors !
@@ -430,7 +442,7 @@ runPlutusBenchmark submitMode scriptFile (ThreadName threadName) txCount tps = d
                           script
                           (ScriptDatumForTxIn $ ScriptDataNumber 3) -- script data
                           (ScriptDataNumber 6) -- script redeemer
-                          (ExecutionUnits requiredSteps requiredMemory)
+                          executionUnits
 
     txGenerator = genTxPlutusSpend protocolParameters collateral scriptWitness (mkFee totalFee) metadata
 
