@@ -11,6 +11,7 @@ import qualified Test.Tasty as T
 import qualified Test.Tasty.Hedgehog as H
 import qualified Test.Tasty.Ingredients as T
 
+import qualified Spec.Config.Mainnet
 import qualified Spec.Plutus.Direct.TxInLockingPlutus
 import qualified Spec.Plutus.Script.TxInLockingPlutus
 import qualified Spec.Plutus.SubmitApi.TxInLockingPlutus
@@ -19,7 +20,8 @@ tests :: IO T.TestTree
 tests = do
   pure $ T.testGroup "test/Spec.hs"
     [ T.testGroup "Spec"
-      [ H.testProperty "Spec.Plutus.Direct.TxInLockingPlutus" Spec.Plutus.Direct.TxInLockingPlutus.hprop_plutus
+      [ H.testProperty "Spec.Config.Mainnet" Spec.Config.Mainnet.hprop_configMainnet
+      , H.testProperty "Spec.Plutus.Direct.TxInLockingPlutus" Spec.Plutus.Direct.TxInLockingPlutus.hprop_plutus
       , H.testProperty "Spec.Plutus.Script.TxInLockingPlutus" Spec.Plutus.Script.TxInLockingPlutus.hprop_plutus
       , H.testProperty "Spec.Plutus.SubmitApi.TxInLockingPlutus" Spec.Plutus.SubmitApi.TxInLockingPlutus.hprop_plutus
       ]

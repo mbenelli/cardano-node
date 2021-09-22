@@ -101,6 +101,7 @@ test-suite cardano-testnet-tests
   type:                 exitcode-stdio-1.0
 
   build-depends:        aeson
+                      , cardano-api
                       , cardano-testnet
                       , directory
                       , hedgehog
@@ -109,9 +110,11 @@ test-suite cardano-testnet-tests
                       , tasty
                       , tasty-hedgehog
                       , text
+                      , transformers
                       , unordered-containers
 
-  other-modules:        Spec.Plutus.Direct.TxInLockingPlutus
+  other-modules:        Spec.Config.Mainnet
+                        Spec.Plutus.Direct.TxInLockingPlutus
                         Spec.Plutus.Script.TxInLockingPlutus
                         Spec.Plutus.SubmitApi.TxInLockingPlutus
 
